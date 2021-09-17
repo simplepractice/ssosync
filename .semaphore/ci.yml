@@ -1,0 +1,32 @@
+version: v1.0
+name: CI
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+execution_time_limit:
+  minutes: 40
+auto_cancel:
+  running:
+    when: "true"
+global_job_config:
+  secrets:
+    - name: aws-ecr
+  env_vars:
+    - name: AWS_DEFAULT_REGION
+      value: us-west-2
+    - name: ECR_NAME
+      value: 070456302254.dkr.ecr.us-west-2.amazonaws.com
+  prologue:
+    commands:
+      - checkout
+      - sudo pip install awscli
+      - aws ecr get-login --no-include-email --registry-ids 070456302254 | bash
+blocks:
+  - name: Build
+    dependencies: []
+    task:
+      jobs:
+        - name: Build
+          commands:
+            - docker run -v $PWD:/workspace -v ~/.docker/config.json:/kaniko/config.json --env DOCKER_CONFIG=/kaniko gcr.io/kaniko-project/executor --dockerfile=Dockerfile --build-arg=REVISION=$(git rev-parse HEAD) -d $ECR_NAME/ssosync:$(git rev-parse HEAD)
