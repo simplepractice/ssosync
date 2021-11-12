@@ -1,0 +1,29 @@
+version: v1.0
+name: Docker images
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+
+global_job_config:
+  secrets:
+    - name: aws-ecr
+    - name: github
+  env_vars:
+    - name: AWS_DEFAULT_REGION
+      value: us-west-2
+  prologue:
+    commands:
+      - checkout
+      - sudo pip install awscli
+      - sem-version ruby 2.7
+      - aws ecr get-login --no-include-email --registry-ids 070456302254 | bash
+
+blocks:
+  - name: Build
+    dependencies: []
+    task:
+      jobs:
+        - name: Build
+          commands:
+            - docker run -v $PWD:/workspace -v ~/.docker/config.json:/kaniko/config.json --env DOCKER_CONFIG=/kaniko gcr.io/kaniko-project/executor --dockerfile=Dockerfile -d $ECR_NAME/ssosync:master
