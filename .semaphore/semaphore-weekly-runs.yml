@@ -12,6 +12,8 @@ global_job_config:
   env_vars:
     - name: AWS_DEFAULT_REGION
       value: us-west-2
+    - name: ECR_NAME
+      value: 070456302254.dkr.ecr.us-west-2.amazonaws.com
   prologue:
     commands:
       - checkout
