@@ -19,7 +19,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN go build -o ssosync .
+RUN go build -o ssosync -buildvcs=false .
 
 # Move to /dist directory as the place for resulting binary folder
 WORKDIR /dist
