@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"time"
 
 	"github.com/awslabs/ssosync/internal/aws"
 	"github.com/awslabs/ssosync/internal/config"
@@ -38,8 +37,8 @@ import (
 // SyncGSuite is the interface for synchronizing users/groups
 type SyncGSuite interface {
 	SyncUsers(string) error
-	SyncGroups([]string) error
-	SyncGroupsUsers([]string) error
+	SyncGroups(string) error
+	SyncGroupsUsers(string) error
 }
 
 // SyncGSuite is an object type that will synchronize real users and groups
@@ -173,8 +172,10 @@ func (s *syncGSuite) SyncUsers(query string) error {
 //  name:contact* email:contact*
 //  name:Admin* email:aws-*
 //  email:aws-*
-func (s *syncGSuite) SyncGroups(queries []string) error {
-	googleGroups, err := s.getGroups(queries)
+func (s *syncGSuite) SyncGroups(query string) error {
+
+	log.WithField("query", query).Debug("get google groups")
+	googleGroups, err := s.google.GetGroups(query)
 	if err != nil {
 		return err
 	}
@@ -284,8 +285,10 @@ func (s *syncGSuite) SyncGroups(queries []string) error {
 //  4) add groups in aws and add its members, these were added in google
 //  5) validate equals aws an google groups members
 //  6) delete groups in aws, these were deleted in google
-func (s *syncGSuite) SyncGroupsUsers(queries []string) error {
-	googleGroups, err := s.getGroups(queries)
+func (s *syncGSuite) SyncGroupsUsers(query string) error {
+
+	log.WithField("query", query).Info("get google groups")
+	googleGroups, err := s.google.GetGroups(query)
 	if err != nil {
 		return err
 	}
@@ -395,9 +398,6 @@ func (s *syncGSuite) SyncGroupsUsers(queries []string) error {
 	// add aws users (added in google)
 	log.Debug("creating aws users added in google")
 	for _, awsUser := range addAWSUsers {
-		user, _ := s.aws.FindUserByEmail(awsUser.Username)
-		if user == nil {
-			log := log.WithFields(log.Fields{"user": awsUser.Username})
 
 		log := log.WithFields(log.Fields{"user": awsUser.Username})
 
@@ -563,7 +563,6 @@ func (s *syncGSuite) getGoogleGroupsAndUsers(googleGroups []*admin.Group) ([]*ad
 
 			log.WithField("id", m.Email).Debug("get user")
 			q := fmt.Sprintf("email:%s", m.Email)
-			time.Sleep(1 * time.Second)
 			u, err := s.google.GetUsers(q) // TODO: implement GetUser(m.Email)
 
 			if err != nil {
